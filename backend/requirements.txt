@@ -1,0 +1,10 @@
+fastapi==0.141.1
+uvicorn[standard]==0.52.4
+sqlalchemy==2.0.52
+psycopg[binary]==3.3.5
+pydantic-settings==2.15.0
+beautifulsoup4==4.15.0
+curl_cffi==0.16.3
+pytz==2026.3.post1
+airportsdata==20260905
+python-dotenv==1.2.3
