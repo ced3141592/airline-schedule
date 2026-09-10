@@ -144,8 +144,8 @@ async function requestSchedule(forceUpdate) {
       throw new Error(message);
     }
     renderSchedule(payload);
-    const sourceLabel = payload.source === "database" ? "database" : "FlightsFrom.com";
-    show(statusEl, `Showing ${payload.origin} → ${payload.destination} from the ${sourceLabel}.`);
+    const sourcePhrase = payload.source === "database" ? "the database" : "FlightsFrom.com";
+    show(statusEl, `Showing ${payload.origin} → ${payload.destination} from ${sourcePhrase}.`);
   } catch (error) {
     resultsEl.hidden = true;
     hide(statusEl);
