@@ -90,7 +90,7 @@ label {
   color: var(--muted);
 }
 
-input {
+input.iata {
   width: 108px;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -100,6 +100,21 @@ input {
   text-transform: uppercase;
   color: var(--navy);
   background: #f8fbff;
+}
+
+input.date-input,
+input.weeks-input {
+  width: 160px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: 600 0.95rem/1 "IBM Plex Sans", sans-serif;
+  color: var(--navy);
+  background: #f8fbff;
+}
+
+input.weeks-input {
+  width: 108px;
 }
 
 input:focus {
@@ -264,6 +279,14 @@ thead th:last-child {
 .empty {
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.out-of-range {
+  background: #f7fafc;
+}
+
+.out-of-range .empty {
+  font-style: italic;
 }
 
 @media (max-width: 700px) {

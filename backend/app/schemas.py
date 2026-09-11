@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -8,6 +8,8 @@ from pydantic import BaseModel, Field
 class ScheduleRequest(BaseModel):
     origin: str = Field(min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
     destination: str = Field(min_length=3, max_length=3, pattern=r"^[A-Za-z]{3}$")
+    start_date: date | None = None
+    weeks: int = Field(default=4, ge=1, le=8)
 
 
 class FlightView(BaseModel):
@@ -23,6 +25,7 @@ class FlightView(BaseModel):
 class ScheduleCell(BaseModel):
     date: date
     weekday: str
+    in_range: bool
     flights: list[FlightView]
 
 

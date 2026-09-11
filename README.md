@@ -2,16 +2,16 @@
 
 Web app that shows weekly airline schedules for a route. It has three parts:
 
-- **UI** (`frontend/`): JavaScript page with From / To fields, Run, and Update
+- **UI** (`frontend/`): JavaScript page with From / To, start date, length, Run, and Update
 - **Server** (`backend/`): Python FastAPI service
 - **Database** (`database/`): PostgreSQL scripts that cache fetched schedules
 
 ## How it works
 
-1. Enter 3-letter IATA codes (for example `MAD` → `AMS`) and click **Run**.
-2. The server looks up that route in PostgreSQL.
-3. If the route is cached, the UI renders it immediately.
-4. If it is missing, the server fetches two weeks of calendars from [FlightsFrom.com](https://www.flightsfrom.com), stores them, and then renders them.
+1. Enter 3-letter IATA codes (for example `MAD` → `AMS`), a start date (default: today), and length in weeks (default: 4), then click **Run**.
+2. The server deletes any cached flights dated before today, then looks up that route and window in PostgreSQL.
+3. If that exact search is cached, the UI renders it immediately.
+4. If it is missing, the server fetches the selected number of weeks from [FlightsFrom.com](https://www.flightsfrom.com), stores them, and then renders them.
 5. **Update** always refetches from FlightsFrom.com and overwrites the cached route.
 
 The table has one row per weekday (Monday–Sunday) and one column per week. Each cell lists that date’s flights in departure order.
