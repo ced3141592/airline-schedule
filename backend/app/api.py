@@ -23,6 +23,8 @@ def get_schedule(
             origin=payload.origin,
             destination=payload.destination,
             force_update=force_update,
+            start_date=payload.start_date,
+            weeks=payload.weeks,
         )
     except ValueError as exc:
         message = str(exc)

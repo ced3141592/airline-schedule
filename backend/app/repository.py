@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytz
-from sqlalchemy import select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.db import Route, ScheduledFlightRow, utcnow
@@ -28,6 +28,35 @@ def monday_on_or_before(day: date) -> date:
 
 def window_dates(window_start: date, weeks: int) -> list[date]:
     return [window_start + timedelta(days=offset) for offset in range(weeks * 7)]
+
+
+def window_end(window_start: date, weeks: int) -> date:
+    return window_start + timedelta(weeks=weeks) - timedelta(days=1)
+
+
+def week_mondays_for_window(window_start: date, weeks: int) -> list[date]:
+    first_monday = monday_on_or_before(window_start)
+    last_monday = monday_on_or_before(window_end(window_start, weeks))
+    mondays: list[date] = []
+    current = first_monday
+    while current <= last_monday:
+        mondays.append(current)
+        current += timedelta(weeks=1)
+    return mondays
+
+
+def delete_past_data(session: Session, today: date) -> None:
+    session.execute(delete(ScheduledFlightRow).where(ScheduledFlightRow.flight_date < today))
+    session.execute(delete(Route).where(Route.window_start < today))
+    empty_route_ids = session.scalars(
+        select(Route.id)
+        .outerjoin(ScheduledFlightRow, ScheduledFlightRow.route_id == Route.id)
+        .group_by(Route.id)
+        .having(func.count(ScheduledFlightRow.id) == 0)
+    ).all()
+    if empty_route_ids:
+        session.execute(delete(Route).where(Route.id.in_(empty_route_ids)))
+    session.flush()
 
 
 def get_route(session: Session, origin: str, destination: str) -> Route | None:
