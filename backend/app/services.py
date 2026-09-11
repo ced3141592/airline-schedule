@@ -3,17 +3,17 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta
 
 import pytz
-from sqlalchemy.orm import Session
 
 from app.clients.flightsfrom import FlightsFromClient
-from app.config import get_settings
 from app.db import Route, get_session_factory
 from app.repository import (
     WEEKDAYS,
+    delete_past_data,
     get_route,
-    monday_on_or_before,
     replace_route_schedule,
+    week_mondays_for_window,
     window_dates,
+    window_end,
 )
 from app.schemas import FlightView, ScheduleCell, ScheduleResponse, ScheduleRow
 
@@ -22,8 +22,8 @@ def normalize_iata(code: str) -> str:
     return code.strip().upper()
 
 
-def current_window_start() -> date:
-    return monday_on_or_before(datetime.now().date())
+def today() -> date:
+    return datetime.now().date()
 
 
 def fetch_from_flightsfrom(origin: str, destination: str, window_start: date, weeks: int) -> list:
@@ -35,6 +35,7 @@ def to_response(route: Route, source: str) -> ScheduleResponse:
     origin_zone = pytz.timezone(route.origin_timezone)
     destination_zone = pytz.timezone(route.destination_timezone)
     flights_by_date: dict[date, list[FlightView]] = {}
+    last_date = window_end(route.window_start, route.weeks)
 
     for row in route.flights:
         departure_local = row.scheduled_departure_time.astimezone(origin_zone)
@@ -54,17 +55,19 @@ def to_response(route: Route, source: str) -> ScheduleResponse:
     for flight_date in flights_by_date:
         flights_by_date[flight_date].sort(key=lambda item: item.departure_local_time)
 
-    columns = [route.window_start + timedelta(weeks=week) for week in range(route.weeks)]
+    columns = week_mondays_for_window(route.window_start, route.weeks)
     rows: list[ScheduleRow] = []
     for weekday_index, weekday in enumerate(WEEKDAYS):
         cells: list[ScheduleCell] = []
         for week_start in columns:
             cell_date = week_start + timedelta(days=weekday_index)
+            in_range = route.window_start <= cell_date <= last_date
             cells.append(
                 ScheduleCell(
                     date=cell_date,
                     weekday=weekday,
-                    flights=flights_by_date.get(cell_date, []),
+                    in_range=in_range,
+                    flights=flights_by_date.get(cell_date, []) if in_range else [],
                 )
             )
         rows.append(ScheduleRow(weekday=weekday, cells=cells))
@@ -82,23 +85,43 @@ def to_response(route: Route, source: str) -> ScheduleResponse:
     )
 
 
-def load_or_fetch_schedule(origin: str, destination: str, force_update: bool) -> ScheduleResponse:
+def load_or_fetch_schedule(
+    origin: str,
+    destination: str,
+    force_update: bool,
+    start_date: date | None = None,
+    weeks: int | None = None,
+) -> ScheduleResponse:
     origin = normalize_iata(origin)
     destination = normalize_iata(destination)
     if origin == destination:
         raise ValueError("Origin and destination must be different airports.")
 
+    current_day = today()
+    window_start = start_date or current_day
+    week_count = 4 if weeks is None else weeks
+    if window_start < current_day:
+        raise ValueError("Start date cannot be in the past.")
+    if week_count < 1:
+        raise ValueError("Length must be at least 1 week.")
+
     session_factory = get_session_factory()
+
+    with session_factory() as session:
+        delete_past_data(session, current_day)
+        session.commit()
 
     if not force_update:
         with session_factory() as session:
             cached = get_route(session, origin, destination)
-            if cached is not None:
+            if (
+                cached is not None
+                and cached.window_start == window_start
+                and cached.weeks == week_count
+            ):
                 return to_response(cached, source="database")
 
-    settings = get_settings()
-    window_start = current_window_start()
-    flights = fetch_from_flightsfrom(origin, destination, window_start, settings.schedule_weeks)
+    flights = fetch_from_flightsfrom(origin, destination, window_start, week_count)
 
     with session_factory() as session:
         route = replace_route_schedule(
@@ -107,7 +130,7 @@ def load_or_fetch_schedule(origin: str, destination: str, force_update: bool) ->
             destination=destination,
             flights=flights,
             window_start=window_start,
-            weeks=settings.schedule_weeks,
+            weeks=week_count,
         )
         session.commit()
         return to_response(route, source="flightsfrom")

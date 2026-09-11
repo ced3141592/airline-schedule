@@ -18,8 +18,9 @@
         <p class="eyebrow">Weekly timetable</p>
         <h1>Flight schedules</h1>
         <p class="lede">
-          Enter origin and destination IATA codes. Run loads a cached route when one exists;
-          Update always refreshes from FlightsFrom.com.
+          Enter origin and destination IATA codes, a start date, and how many weeks to load.
+          Run uses the database when that exact search is cached; Update always refreshes from
+          FlightsFrom.com. Past flights are removed from the database on every search.
         </p>
       </header>
 
@@ -29,6 +30,7 @@
             From
             <input
               id="origin"
+              class="iata"
               name="origin"
               maxlength="3"
               minlength="3"
@@ -42,12 +44,30 @@
             To
             <input
               id="destination"
+              class="iata"
               name="destination"
               maxlength="3"
               minlength="3"
               placeholder="AMS"
               required
               spellcheck="false"
+            />
+          </label>
+          <label>
+            Start date
+            <input id="start-date" class="date-input" name="start_date" type="date" required />
+          </label>
+          <label>
+            Length (weeks)
+            <input
+              id="weeks"
+              class="weeks-input"
+              name="weeks"
+              type="number"
+              min="1"
+              max="8"
+              value="4"
+              required
             />
           </label>
         </div>

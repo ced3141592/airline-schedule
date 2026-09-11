@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT_DIR / ".env", extra="ignore")
 
     database_url: str = "postgresql+psycopg://flights:flights@localhost:5432/flights"
-    schedule_weeks: int = 2
+    schedule_weeks: int = 4
     request_delay_seconds: float = 0.25
     frontend_dir: Path = ROOT_DIR / "frontend"
     schema_path: Path = ROOT_DIR / "database" / "schema.sql"

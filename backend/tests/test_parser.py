@@ -4,7 +4,7 @@ from pathlib import Path
 import pytz
 
 from app.clients.flightsfrom import FlightsFromClient
-from app.repository import monday_on_or_before, window_dates
+from app.repository import monday_on_or_before, week_mondays_for_window, window_dates
 
 
 FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures"
@@ -40,3 +40,9 @@ def test_monday_window():
     assert monday_on_or_before(date(2026, 9, 10)) == date(2026, 9, 7)
     assert window_dates(date(2026, 9, 7), 2)[0] == date(2026, 9, 7)
     assert window_dates(date(2026, 9, 7), 2)[-1] == date(2026, 9, 20)
+
+
+def test_week_columns_from_midweek_start():
+    columns = week_mondays_for_window(date(2026, 9, 10), 1)
+    assert columns == [date(2026, 9, 7), date(2026, 9, 14)]
+
